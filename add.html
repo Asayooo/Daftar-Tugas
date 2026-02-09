@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambah Tugas</title>
+<style>
+body {
+  font-family: system-ui, -apple-system, Arial, sans-serif;
+  margin: 0;
+  background: #f4f6fb;
+}
+
+header {
+  background:#4f46e5;
+  color:white;
+  padding:16px;
+}
+
+.container {
+  padding: 16px;
+}
+
+input {
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #ddd;
+  margin-bottom:10px;
+}
+
+button {
+  width:100%;
+  padding:10px;
+  margin-bottom: 5px;
+  border:none;
+  border-radius:10px;
+  font-size:14px;
+}
+
+.save { background:#4f46e5; color:white; }
+.back { background:#e5e7eb; }
+</style>
+
+</head>
+<body>
+
+<header>
+  <h2 style="margin:0;">➕ Tambah / Edit Tugas</h2>
+</header>
+
+<div class="container">
+
+<input id="nama" placeholder="Nama Tugas">
+<input id="mapel" placeholder="Mata Pelajaran">
+<input id="deadline" type="date">
+
+<button class="save" onclick="simpan()">💾 Simpan</button>
+<a href="index.html">
+  <button class="back">⬅️ Kembali</button>
+</a>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+
+if (id !== null) {
+  const t = tasks[id];
+  document.getElementById("nama").value = t.nama;
+  document.getElementById("mapel").value = t.mapel;
+  document.getElementById("deadline").value = t.deadline;
+}
+
+function simpan() {
+  const nama = document.getElementById("nama").value;
+  const mapel = document.getElementById("mapel").value;
+  const deadline = document.getElementById("deadline").value;
+
+  if (!nama || !mapel || !deadline) {
+    alert("Isi semua data!");
+    return;
+  }
+
+  if (id === null) {
+    tasks.push({ nama, mapel, deadline, selesai: false });
+  } else {
+    tasks[id] = { ...tasks[id], nama, mapel, deadline };
+  }
+
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  window.location.href = "index.html";
+}
+</script>
+</body>
+</html>
