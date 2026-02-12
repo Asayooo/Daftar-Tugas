@@ -1,10 +1,25 @@
-function initNotif() {
+// =====================
+// NOTIFICATION SETUP
+// =====================
+
+async function initApp() {
   if (!("Notification" in window)) return;
 
   if (Notification.permission === "default") {
-    Notification.requestPermission();
+    await Notification.requestPermission();
   }
+
+  render();
+  smartReminder();
 }
+
+async function getSW() {
+  return await navigator.serviceWorker.ready;
+}
+
+// =====================
+// STORAGE
+// =====================
 
 function ambilTugas() {
   return JSON.parse(localStorage.getItem("tasks") || "[]");
@@ -14,42 +29,26 @@ function simpanTugas(tasks) {
   localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
+// =====================
+// UTIL
+// =====================
+
 function hitungSisaHari(deadline) {
   const d = new Date(deadline);
   const today = new Date();
-  const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-  return diff;
+  today.setHours(0,0,0,0);
+  return Math.ceil((d - today) / (1000 * 60 * 60 * 24));
 }
 
-function tampilkanNotifikasi(tasks) {
-  const box = document.getElementById("notif");
-  let pesan = [];
-
-  const today = new Date().toISOString().split("T")[0];
-
-  tasks.forEach(t => {
-    if (!t.selesai) {
-      if (t.deadline === today) {
-        pesan.push(`⚠️ "${t.nama}" deadline HARI INI`);
-      } else if (t.deadline < today) {
-        pesan.push(`⛔ "${t.nama}" sudah TELAT`);
-      }
-    }
-  });
-
-  if (pesan.length > 0) {
-    box.style.display = "block";
-    box.innerHTML = pesan.join("<br>");
-  } else {
-    box.style.display = "none";
-  }
-}
+// =====================
+// RENDER
+// =====================
 
 function render(tasks = ambilTugas()) {
   const list = document.getElementById("taskList");
-  list.innerHTML = "";
+  if (!list) return;
 
-  tampilkanNotifikasi(tasks);
+  list.innerHTML = "";
 
   tasks.forEach((t, i) => {
     const sisa = hitungSisaHari(t.deadline);
@@ -67,24 +66,26 @@ function render(tasks = ambilTugas()) {
       + (t.selesai ? "done " : "")
       + (isLate ? "late" : "");
 
-
-      div.innerHTML = `
-    <div class="title">${t.nama}</div>
-    <div class="meta">📘 ${t.mapel}</div>
-    <div class="meta">⏰ Deadline: ${t.deadline}</div>
-    <div class="meta">🕒 Sisa: ${sisaText}</div>
-
-    <div class="flex">
-      <button class="btn-success" onclick="toggleSelesai(${i})">
-        ${t.selesai ? "↩️ Batal" : "☑️ Selesai"}
-      </button>
-      <button class="btn-warning" onclick="edit(${i})">✏️ Edit</button>
-      <button class="btn-danger" onclick="hapus(${i})">🗑️ Hapus</button>
-    </div>
-  `;
+    div.innerHTML = `
+      <div class="title">${t.nama}</div>
+      <div class="meta">📘 ${t.mapel}</div>
+      <div class="meta">⏰ Deadline: ${t.deadline}</div>
+      <div class="meta">🕒 Sisa: ${sisaText}</div>
+      <div class="flex">
+        <button class="btn-success" onclick="toggleSelesai(${i})">
+          ${t.selesai ? "↩️ Batal" : "☑️ Selesai"}
+        </button>
+        <button class="btn-warning" onclick="edit(${i})">✏️ Edit</button>
+        <button class="btn-danger" onclick="hapus(${i})">🗑️ Hapus</button>
+      </div>
+    `;
     list.appendChild(div);
   });
 }
+
+// =====================
+// CRUD
+// =====================
 
 function toggleSelesai(i) {
   let tasks = ambilTugas();
@@ -105,46 +106,25 @@ function edit(i) {
   window.location.href = "add.html?id=" + i;
 }
 
-// PENCARIAN
-document.addEventListener("DOMContentLoaded", () => {
-  render();
-  smartReminder();
-
-  const search = document.getElementById("search");
-  if (search) {
-    search.addEventListener("input", () => {
-      const keyword = search.value.toLowerCase();
-      const tasks = ambilTugas().filter(t =>
-        t.nama.toLowerCase().includes(keyword) ||
-        t.mapel.toLowerCase().includes(keyword)
-      );
-      render(tasks);
-    });
-  }
-});
+// =====================
+// SMART REMINDER
+// =====================
 
 async function smartReminder() {
-  const tasks = ambilTugas();
-  const today = new Date().toISOString().split("T")[0];
+  if (Notification.permission !== "granted") return;
 
-  const sw = await navigator.serviceWorker.ready;
+  const tasks = ambilTugas();
+  const sw = await getSW();
 
   tasks.forEach(t => {
     if (t.selesai) return;
 
     const sisa = hitungSisaHari(t.deadline);
 
-    const notifKey = `notif-${t.nama}-${today}`;
-    if (localStorage.getItem(notifKey)) return;
-
     let title = "";
     let body = "";
 
-    if (sisa === 3) {
-      title = "⏳ 3 Hari Lagi";
-      body = `"${t.nama}" tinggal 3 hari lagi`;
-    }
-    else if (sisa === 1) {
+    if (sisa === 1) {
       title = "⚠️ Besok Deadline!";
       body = `"${t.nama}" tinggal 1 hari lagi`;
     }
@@ -157,17 +137,19 @@ async function smartReminder() {
       body = `"${t.nama}" sudah lewat deadline`;
     }
 
-    if (title) {
+    if (title && sw.active) {
       sw.active.postMessage({
         type: "SMART_REMINDER",
         title,
         body
       });
-
-      localStorage.setItem(notifKey, "sent");
     }
   });
 }
+
+// =====================
+// SOUND HANDLER
+// =====================
 
 navigator.serviceWorker.addEventListener("message", event => {
   if (event.data === "PLAY_SOUND") {
@@ -176,6 +158,11 @@ navigator.serviceWorker.addEventListener("message", event => {
   }
 });
 
+// =====================
+// INIT
+// =====================
+
+document.addEventListener("DOMContentLoaded", initApp);
+
 // cek tiap 5 menit
 setInterval(smartReminder, 5 * 60 * 1000);
-
