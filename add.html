@@ -29,8 +29,11 @@ input {
   margin-bottom:10px;
 }
 
-.date {
-  
+label {
+  display:block;
+  font-size:13px;
+  margin-bottom:6px;
+  color:#555;
 }
 
 button {
@@ -57,7 +60,9 @@ button {
 
 <input id="nama" placeholder="Nama Tugas">
 <input id="mapel" placeholder="Mata Pelajaran">
-<input id="deadline" type="date" plaseholder="Deadline">
+<label for="deadline">📅 Deadline</label>
+<input id="deadline" type="date" required>
+
 
 <button class="save" onclick="simpan()">💾 Simpan</button>
 <a href="index.html">

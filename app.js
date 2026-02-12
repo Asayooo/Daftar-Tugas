@@ -1,3 +1,11 @@
+function initNotif() {
+  if (!("Notification" in window)) return;
+
+  if (Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
 function ambilTugas() {
   return JSON.parse(localStorage.getItem("tasks") || "[]");
 }
@@ -100,6 +108,7 @@ function edit(i) {
 // PENCARIAN
 document.addEventListener("DOMContentLoaded", () => {
   render();
+  smartReminder();
 
   const search = document.getElementById("search");
   if (search) {
@@ -113,10 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
-if ("Notification" in window) {
-  Notification.requestPermission();
-}
 
 async function smartReminder() {
   const tasks = ambilTugas();
@@ -163,6 +168,13 @@ async function smartReminder() {
     }
   });
 }
+
+navigator.serviceWorker.addEventListener("message", event => {
+  if (event.data === "PLAY_SOUND") {
+    const audio = new Audio("notif.mp3");
+    audio.play();
+  }
+});
 
 // cek tiap 5 menit
 setInterval(smartReminder, 5 * 60 * 1000);
