@@ -134,6 +134,19 @@ button {
 
 </div>
 
+<button onclick="mintaIzin()">Aktifkan Notifikasi</button>
+
+<script>
+function mintaIzin() {
+  Notification.requestPermission().then(permission => {
+    if (permission === "granted") {
+      alert("Notifikasi telah sukses diaktifkan!");
+    }
+  });
+}
+</script>
+
+
 
 <script src="app.js"></script>
 <script>
