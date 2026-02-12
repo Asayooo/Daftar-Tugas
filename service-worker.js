@@ -1,4 +1,4 @@
-const CACHE_NAME = "tugas-v1";
+const CACHE_NAME = "tugas-v2";
 const ASSETS = [
   "index.html",
   "add.html",
@@ -16,4 +16,13 @@ self.addEventListener("fetch", e => {
   e.respondWith(
     caches.match(e.request).then(res => res || fetch(e.request))
   );
+});
+
+self.addEventListener("message", event => {
+  if (event.data === "REMINDER") {
+    self.registration.showNotification("Pengingat Deadline!", {
+      body: "Ada tugas yang deadline hari ini!",
+      icon: "icon-192.png"
+    });
+  }
 });

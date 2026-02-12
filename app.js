@@ -6,27 +6,6 @@ function simpanTugas(tasks) {
   localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
-function cekDeadline(deadline) {
-  const hariIni = new Date();
-  const batas = new Date(deadline);
-  const selisih = batas - hariIni;
-  const sisaHari = Math.ceil(selisih / (1000 * 60 * 60 * 24));
-
-  if (sisaHari === 1 && Notification.permission === "granted") {
-    new Notification("Pengingat Deadline!", {
-      body: "Tinggal 1 hari lagi!"
-    });
-  } 
-  
-  else if (sisaHari === 0 && Notification.permission === "granted") {
-    new Notification("Pengingat Deadline!", { 
-      body: "Deadlinenya hari ini!"});
-  }
-
-  document.getElementById("sisaHari").innerText = "Sisa hari: " + sisaHari;
-}
-
-
 function hitungSisaHari(deadline) {
   const d = new Date(deadline);
   const today = new Date();
@@ -134,3 +113,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+if ("Notification" in window) {
+  Notification.requestPermission();
+}
+
+async function cekNotifikasiDeadline() {
+  const tasks = ambilTugas();
+  const today = new Date().toISOString().split("T")[0];
+
+  const sw = await navigator.serviceWorker.ready;
+
+  tasks.forEach(t => {
+    if (!t.selesai && t.deadline === today) {
+      sw.active.postMessage("REMINDER");
+    }
+  });
+}
+
+setInterval(cekNotifikasiDeadline, 60000); // cek tiap 1 menit
+
