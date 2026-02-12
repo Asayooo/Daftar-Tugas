@@ -118,18 +118,52 @@ if ("Notification" in window) {
   Notification.requestPermission();
 }
 
-async function cekNotifikasiDeadline() {
+async function smartReminder() {
   const tasks = ambilTugas();
   const today = new Date().toISOString().split("T")[0];
 
   const sw = await navigator.serviceWorker.ready;
 
   tasks.forEach(t => {
-    if (!t.selesai && t.deadline === today) {
-      sw.active.postMessage("REMINDER");
+    if (t.selesai) return;
+
+    const sisa = hitungSisaHari(t.deadline);
+
+    const notifKey = `notif-${t.nama}-${today}`;
+    if (localStorage.getItem(notifKey)) return;
+
+    let title = "";
+    let body = "";
+
+    if (sisa === 3) {
+      title = "⏳ 3 Hari Lagi";
+      body = `"${t.nama}" tinggal 3 hari lagi`;
+    }
+    else if (sisa === 1) {
+      title = "⚠️ Besok Deadline!";
+      body = `"${t.nama}" tinggal 1 hari lagi`;
+    }
+    else if (sisa === 0) {
+      title = "🚨 Deadline Hari Ini!";
+      body = `"${t.nama}" harus dikumpulkan hari ini!`;
+    }
+    else if (sisa < 0) {
+      title = "❌ Sudah Telat!";
+      body = `"${t.nama}" sudah lewat deadline`;
+    }
+
+    if (title) {
+      sw.active.postMessage({
+        type: "SMART_REMINDER",
+        title,
+        body
+      });
+
+      localStorage.setItem(notifKey, "sent");
     }
   });
 }
 
-setInterval(cekNotifikasiDeadline, 60000); // cek tiap 1 menit
+// cek tiap 5 menit
+setInterval(smartReminder, 5 * 60 * 1000);
 
